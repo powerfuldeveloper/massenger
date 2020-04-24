@@ -1,0 +1,394 @@
+{% extends 'pages/master.html' %}
+{% load static %}
+
+{% block context %}
+    <!-- BASIC MODAL -->
+    <div id="modaldemo1" class="modal fade">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content bd-0 tx-14">
+                <div class="modal-header pd-y-20 pd-x-25">
+                    <h6 class="tx-14 mg-b-0 tx-uppercase tx-inverse tx-bold">یکی از کاربران را انتخاب کنید</h6>
+                    <button type="button" class="close" style="float: right;margin: -1rem auto -1rem -1rem;"
+                            data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-0 tx-right">
+                    <div class="card widget-5">
+                        <div class="list-group list-group-flush modal-users-list-view">
+                            {% include 'components/spinner.html' %}
+                        </div><!-- list-group -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn ir-font btn-secondary tx-12 tx-uppercase pd-y-12 pd-x-25 tx-mont tx-medium mg-l-0 mg-r-5"
+                            data-dismiss="modal">بستن
+                    </button>
+                </div>
+            </div>
+        </div><!-- modal-dialog -->
+    </div><!-- modal -->
+
+    <div class="col-12">
+        <div class="row row-sm mg-t-20">
+            <div class="col-lg-5 col-xl-4">
+                <div class="card widget-5">
+                    <div class="card-header">
+                        <span>پیام ها
+                        <a href="#" class="btn btn-dark btn-icon rounded-circle text-white" id="update_all_chats"><div><i
+                                class="fa fa-redo"></i></div></a></span>
+                        <a href=""
+                           data-toggle="modal"
+                           data-target="#modaldemo1">ارسال پیام جدید</a>
+                    </div><!-- card-header -->
+                    <div class="list-group list-group-flush sidebar-users-list-view" data-cu-id="{{ request.user.id }}">
+                    </div><!-- list-group -->
+                    {#                <div class="card-footer">#}
+                    {#                    <a href="" class="tx-12"><i class="fa fa-angle-down mg-r-3"></i> پیام های بیشتر</a>#}
+                    {#                </div><!-- card-footer -->#}
+                </div><!-- card -->
+            </div><!-- col-4 -->
+            <div class="col-lg-7 col-xl-8 mg-t-20 mg-lg-t-0">
+                <div class="card widget-6">
+                    <div class="card-header p-2">
+                        <div class="media align-items-center">
+                            <img src="{% static 'img/logo.png' %}" id="to_chat_pic"
+                                 class="wd-50 rounded-circle d-flex mg-l-10 mg-xs-l-15 align-self-start" alt="">
+                            <div class="media-body">
+                            <span class="d-block tx-medium tx-inverse"
+                                  id="to_chat_name">یکی از چت هارا انتخاب کنید</span>
+                                {#                            <span class="tx-12" id="to_chat_status">فعال است</span>#}
+                            </div><!-- media-body -->
+                        </div><!-- media -->
+                        <span class="tx-12">
+                            <a href="#" class="btn btn-dark btn-icon rounded-circle" id="update_chat"><div><i
+                                    class="fa fa-redo"></i></div></a></span>
+                        </span>
+                    </div><!-- card-header -->
+                    <div class="card-body pd-25" style="position: relative">
+                        <div class="media-list messages-container">
+                            <div class="col-12 text-center">
+                                <button class="btn btn-primary btn-sm" id="get-older">گرفتن پیام های قدیمی تر</button>
+                            </div>
+                            <p class="the-messages">یک پیام را انتخاب کنید</p>
+                        </div><!-- media-list -->
+                    </div><!-- card-body -->
+                    <div class="card-footer">
+                        <div class="media">
+                            <img src="
+
+
+                                    {% if request.user.avatar %}{{ request.user.avatar.url }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+                                 class="wd-36 rounded-circle mg-l-20" alt="">
+                            <div class="media-body">
+                            <textarea id="message-input" type="text" class="form-control tx-12"
+                                      placeholder="پیام خودرا بنویسید"></textarea>
+                                <button type="button" id="send-message-button"
+                                        class="btn btn-primary btn-sm mt-2 float-left">ارسال پیام
+                                </button>
+                                <input type="file" style="display: none;" class="file-to-send"/>
+                                <button type="button" style="margin-left: 10px;" id="choose-file-button"
+                                        class="btn btn-primary btn-sm mt-2 float-left">انتخاب فایل
+                                </button>
+                            </div><!-- media-body -->
+                        </div><!-- media -->
+                    </div><!-- card-footer -->
+                </div><!-- card -->
+            </div><!-- col-8 -->
+        </div>
+    </div>
+    {% csrf_token %}
+{% endblock %}
+{% block scripts %}
+    <script src="{% static 'lib/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
+    <script type="text/javascript">
+
+        var ps_container = document.querySelector('.messages-container').parentElement;
+        ps_container.style.height = window.screen.availHeight - 330 + 'px';
+        var ps = new PerfectScrollbar(ps_container);
+        var csrftoken = $("[name=csrfmiddlewaretoken]").val();
+        var current_user_id = Number($(".sidebar-users-list-view").attr('data-cu-id'));
+        var user_preview_model = '<a href="" class="list-group-item list-group-item-action media"><img class="image-holder" src="{% static 'img/logo.png' %}" alt=""><div class="media-body"><div class="msg-top"><span class="name-holder">سیدمحمد محمدی</span><span class="time-holder"></span></div><p class="msg-summary"></p></div></a>';
+        var message_container = $('.messages-container');
+        var message_template_container = '<div class="the-messages media mg-t-20"><img  src="https://via.placeholder.com/500" class="user-image-holder wd-36 rounded-circle mg-l-20" alt=""><div class="media-body tx-12"></div></div>'
+        var sent_message = `<div class="the-message-container"><div class="chat-holder chat-1"></div><span class="chat-time"></span></div>`;
+        var received_message = '<div class="the-message-container"><div class="chat-holder chat-2"></div><span class="chat-time"></span></div>';
+        $('#modaldemo1').on('show.bs.modal', function () {
+            $('#modaldemo1 .the-cool-loader').removeClass('d-none').addClass('d-flex');
+            $('.modal-users-list-view .list-group-item').remove();
+            $.ajax('{% url 'user-show-endpoint' %}', {
+                method: 'post',
+                data: {
+                    csrfmiddlewaretoken: csrftoken,
+                }
+            }).done(function (e) {
+                if (e.data.length)
+                    for (var u in e.data) {
+                        var user = e.data[u];
+                        var user_perview_model_clone = $(user_preview_model);
+                        user_perview_model_clone.attr('data-user-id', user.id);
+                        user_perview_model_clone.click(function (e) {
+                            e.preventDefault();
+                            $.ajax('{% url 'chat-start-endpoint' %}', {
+                                method: 'post',
+                                data: {
+                                    csrfmiddlewaretoken: csrftoken,
+                                    ru: Number(this.getAttribute('data-user-id')),
+                                }
+                            }).done(function (e) {
+                                if (e.ok) {
+                                    $('#modaldemo1').modal('hide');
+                                    retrieve_new_data();
+                                } else {
+                                    alert('کاربری که میخواهید برای او پیام ارسال کنید موجود نمی باشد')
+                                }
+                            })
+                        });
+                        if (user.avatar)
+                            user_perview_model_clone.find('.image-holder').attr('src', user.avatar);
+                        user_perview_model_clone.find('.name-holder').text(user.first_name + ' ' + user.last_name);
+                        user_perview_model_clone.find('.msg-summary').text(user.username);
+                        $('#modaldemo1 .modal-users-list-view').append(user_perview_model_clone);
+                    }
+                else {
+                    console.log('here');
+                    $('#modaldemo1 .modal-users-list-view').append($('<p class="list-group-item text-center">شما نمیتوانید به کس دیگری پیام بدهید</p>'));
+                }
+                $('.the-cool-loader').removeClass('d-flex').addClass('d-none');
+            }).fail(function () {
+                $('.the-cool-loader').removeClass('d-flex').addClass('d-none');
+            })
+        });
+
+        var last_user_id = null;
+        var last_message_container = null;
+
+        function show_messages(messages, prepend) {
+            for (var m in messages) {
+                var message = messages[m];
+                var c = last_user_id == null;
+                var chat_container;
+                if (message.from_user.id === current_user_id)
+                    chat_container = $(sent_message);
+                else
+                    chat_container = $(received_message);
+                var current_message_container;
+                var is_same_as_prev = false;
+                if (prepend) {
+                    var the_one = $('.the-messages').first();
+                    if (the_one && the_one.attr('data-ui') && Number(the_one.attr('data-ui')) == message.from_user.id) {
+                        is_same_as_prev = true;
+                    }
+                 }
+
+                if (prepend && is_same_as_prev) {
+                    chat_container.prepend('<hr class="invisible mg-y-2">');
+                    current_message_container = $('.the-messages').first()
+                }
+                else if (last_user_id && last_user_id === message.from_user.id && !prepend) {
+                    current_message_container = last_message_container;
+                    chat_container.prepend('<hr class="invisible mg-y-2">');
+                } else {
+                    current_message_container = $(message_template_container);
+                    if (!c) {
+                        current_message_container.addClass('mg-t-20');
+                    }
+                }
+
+                if (!prepend) {
+                    last_message_container = current_message_container;
+                    last_user_id = message.from_user.id;
+                }
+
+                current_message_container.attr('data-ui', message.from_user.id);
+
+                chat_container.find('.chat-holder').text(message.text);
+                if (message.file)
+                    chat_container.find('.chat-holder').append('<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>');
+                if (message.from_user.avatar)
+                    current_message_container.find('.user-image-holder').attr('src', message.from_user.avatar);
+                chat_container.attr('data-message-id', message.id);
+                if (prepend)
+                    current_message_container.find('.media-body').prepend(chat_container);
+                else
+                    current_message_container.find('.media-body').append(chat_container);
+                if (prepend )
+                    $('#get-older').parent().after(current_message_container);
+                else if (!prepend)
+                    message_container.append(current_message_container);
+                if (!prepend)
+                    message_container.attr('last-message-id', message.id);
+            }
+            ps.update();
+        }
+
+        function show_chat(chat_id) {
+            last_user_id = null;
+            last_message_container = null;
+            message_container.attr('data-ci', chat_id);
+            message_container.find('.the-messages').remove();
+
+            $.ajax('{% url 'chat-detail-endpoint' %}', {
+                method: 'post',
+                data: {
+                    csrfmiddlewaretoken: csrftoken,
+                    ci: chat_id,
+                }
+            }).done(function (e) {
+                if (e.ok) {
+                    message_container.find('.the-messages').remove();
+                    var user = null;
+                    if (e.data.chat.from_user.id === current_user_id)
+                        user = e.data.chat.to_user;
+                    else
+                        user = e.data.chat.from_user;
+                    $('#to_chat_name').text(user.first_name + ' ' + user.last_name);
+                    if (user.avatar)
+                        $('#to_chat_pic').attr('src', user.avatar);
+                    message_container.attr('data-tu', user.id);
+                    if (e.data.messages.length) {
+                        show_messages(e.data.messages);
+                    } else {
+                        message_container.append('<p class="the-messages">شما اولین پیام را ارسال کنید</p>')
+                    }
+                } else {
+                    message_container.find('.the-messages').remove();
+                    alert('این چت موجود نمی باشد')
+                }
+            });
+        }
+
+        $('#message-input').keydown(function (e) {
+            if (e.ctrlKey && e.key === 'Enter')
+                $('#send-message-button').click();
+        });
+
+        $('#send-message-button').click(function () {
+            var form_data = new FormData();
+            var message = $('#message-input').val();
+            if ($('.file-to-send')[0].files.length)
+                form_data.append('file', $('.file-to-send')[0].files[0]);
+            form_data.append('csrfmiddlewaretoken', csrftoken);
+            form_data.append('from_user', String(current_user_id));
+            form_data.append('to_user', message_container.attr('data-tu'));
+            form_data.append('chat', message_container.attr('data-ci'));
+            form_data.append('text', message);
+            $.ajax('{% url 'message-create-endpoint' %}', {
+                method: 'post',
+                data: form_data,
+                enctype: 'multipart/form-data',
+                contentType: false,
+                processData: false,
+            }).done(function (e) {
+                if (e.ok) {
+                    get_latest_messages();
+                    $('#message-input').val('')
+                } else {
+                    alert('اطلاعات ارسال شده اشتباه است')
+                }
+            });
+        });
+
+        function retrieve_new_data() {
+            $.ajax('{% url 'chat-show-endpoint' %}', {
+                method: 'post',
+                data: {
+                    csrfmiddlewaretoken: csrftoken,
+                }
+            }).done(function (e) {
+                $('.sidebar-users-list-view .list-group-item').remove();
+                if (e.data.length)
+                    for (var u in e.data) {
+                        var user = null;
+                        var user1 = null;
+                        if (e.data[u].from_user.id === current_user_id) {
+                            user = e.data[u].to_user;
+                            user1 = e.data[u].from_user;
+                        } else {
+                            user = e.data[u].from_user;
+                            user1 = e.data[u].to_user;
+                        }
+                        var user_perview_model_clone = $(user_preview_model);
+                        user_perview_model_clone.attr('data-ci', e.data[u].id);
+                        user_perview_model_clone.click(function (e) {
+                            e.preventDefault();
+                            show_chat(this.getAttribute('data-ci'))
+                        });
+                        if (user.avatar)
+                            user_perview_model_clone.find('.image-holder').attr('src', user.avatar);
+                        user_perview_model_clone.find('.name-holder').text(user.first_name + ' ' + user.last_name);
+                        user_perview_model_clone.find('.msg-summary').text(user.username);
+                        $('.sidebar-users-list-view').append(user_perview_model_clone);
+                    }
+                else {
+                    $('.sidebar-users-list-view').append($('<p class="list-group-item text-center">هنوز کسی به شما پیام نداده است</p>'));
+                }
+            }).fail(function () {
+                alert('لطفاً دوباره تلاش کنید')
+            })
+        }
+
+        retrieve_new_data();
+
+        function get_latest_messages() {
+            var chat_id = message_container.attr('data-ci');
+            var last_message_id = message_container.attr('last-message-id');
+            if (chat_id) {
+                $.ajax('{% url 'message-show-endpoint' %}', {
+                    method: 'post',
+                    data: {
+                        csrfmiddlewaretoken: csrftoken,
+                        ci: chat_id,
+                        lmi: last_message_id
+                    }
+                }).done(function (e) {
+                    if (e.data.length) {
+                        show_messages(e.data);
+                    }
+                });
+            }
+        }
+
+        function get_latest_updates() {
+            $.ajax('{% url 'chat-show-endpoint' %}', {}).done(function (e) {
+
+            })
+        }
+
+        function load_older() {
+            var first_the_message = $('.the-messages').first();
+            if (first_the_message) {
+                first_the_message = first_the_message.find('.the-message-container').first()
+                if (first_the_message) {
+                    $.ajax('{% url 'chat-detail-endpoint' %}', {
+                        method: 'post',
+                        data: {
+                            csrfmiddlewaretoken: csrftoken,
+                            ci: message_container.attr('data-ci'),
+                            older_than: first_the_message.attr('data-message-id'),
+                        },
+                    }).done(function (e) {
+                        if (e.data.messages.length) {
+                            console.log(e.data.messages);
+                            show_messages(e.data.messages, true);
+                        }
+                    });
+                }
+            }
+        }
+
+        $(document).ready(function () {
+            $('#update_all_chats').click(retrieve_new_data);
+            $('#update_chat').click(get_latest_messages);
+            $('#get-older').click(load_older);
+            $('#choose-file-button').click(function (e) {
+                $('.file-to-send').click();
+            });
+        });
+
+        {#setInterval(function () {#}
+        {#    get_latest_updates()#}
+        {# }, 1500);#}
+    </script>
+{% endblock %}

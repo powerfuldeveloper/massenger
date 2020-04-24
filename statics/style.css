@@ -1,0 +1,19 @@
+@font-face {
+	font-family: 'IRAN';
+	src: url('fonts/IRANSansWeb.eot'); /* IE9 Compat Modes */
+	src: url('fonts/IRANSansWeb.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+		 url('fonts/IRANSansWeb.woff2') format('woff2'), /* Super Modern Browsers */
+		 url('fonts/IRANSansWeb.woff') format('woff'), /* Pretty Modern Browsers */
+		 url('fonts/IRANSansWeb.ttf')  format('truetype'); /* Safari, Android, iOS */
+}
+p,a,b,strong,h1,h2,h3,h4,h5,h6,tr,td,
+.sidebar-label,.swimlane-header,.dataTables_info,
+button, input, textarea, label, select, option, span{
+	font-family: IRAN;
+}
+.media-body .msg-top span, .chat-1, .chat-time, .alert, .chat-2 {
+	font-family: IRAN !important;
+}
+.ir-font {
+	font-family: IRAN !important;
+}

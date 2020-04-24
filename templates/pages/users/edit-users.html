@@ -1,0 +1,99 @@
+{% extends 'pages/master.html' %}
+{% load static %}
+
+{% block css %}
+    <link href="{% static 'lib/datatables.net-dt/css/jquery.dataTables.min.css' %}" rel="stylesheet">
+    <link href="{% static 'lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block context %}
+    <div class="br-pagetitle">
+        <i class="icon ion-ios-contact"></i>
+        <div>
+            <h4>ویرایش کاربران</h4>
+            <p class="mg-b-0">در این صفحه شما میتوانید کاربران مورد نظر خود را ویرایش کنند</p>
+        </div>
+    </div><!-- d-flex -->
+    <div class="br-pagebody m-0">
+        <div class="br-section-wrapper p-3 pt-2">
+            <h6 class="br-section-label">ویرایش کاربران</h6>
+            {% for field,error in form.errors.items %}
+                <div class="alert alert-danger">{{ error.0 }}</div>
+            {% endfor %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" class="form-layout form-layout-1" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row mg-b-25">
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label class="form-control-label">نام: <span class="tx-danger">*</span></label>
+                            <input class="form-control" type="text" name="first_name"
+                                   value="{{ form.first_name.value|default:'' }}"
+                                   placeholder="نام را وارد کنید" required>
+                        </div>
+                    </div><!-- col-4 -->
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label class="form-control-label">نام خانوادگی: <span class="tx-danger">*</span></label>
+                            <input class="form-control" type="text" name="last_name"
+                                   value="{{ form.last_name.value|default:'' }}"
+                                   placeholder="نام خانوادگی را وارد کنید" required>
+                        </div>
+                    </div><!-- col-4 -->
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label class="form-control-label">نام کاربری: <span class="tx-danger">*</span></label>
+                            <input class="form-control" type="text" name="username"
+                                   value="{{ form.username.value|default:'' }}"
+                                   placeholder="نام کاربری را وارد کنید" required>
+                        </div>
+                    </div><!-- col-4 -->
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label class="form-control-label">کلمه عبور: </label>
+                            <input class="form-control" type="password" name="password"
+                                   placeholder="کلمه عبور">
+                        </div>
+                    </div><!-- col-4 -->
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label class="form-control-label">تصویر کاربر: </label>
+                            {{form.avatar}}
+                        </div>
+                    </div><!-- col-4 -->
+                </div><!-- row -->
+
+                <div class="form-layout-footer">
+                    <button class="btn btn-info">ذخیره</button>
+                </div><!-- form-layout-footer -->
+            </form><!-- form-layout -->
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'lib/highlightjs/highlight.pack.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-dt/js/dataTables.dataTables.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+    <script src="{% static 'lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js' %}"></script>
+    <script>
+        $('#datatable1').DataTable({
+            lengthChange: false,
+            ordering: false,
+            rowCallback: function(row, data) {
+                $('td:nth-child(4)',row).append('<a href="#" class="btn btn-danger btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-recycle"></i></div></a>')
+                $('td:nth-child(4)',row).append('<a href="#" class="btn btn-dark btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-pen"></i></div></a>')
+            },
+            language: {
+                searchPlaceholder: 'جستجو ...',
+                sSearch: '',
+                info: "نمایش __END_ از _TOTAL_ داده",
+            }
+        });
+    </script>
+{% endblock %}
