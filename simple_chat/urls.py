@@ -20,7 +20,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path, include
 
 from simple_chat.views import Login, Main, UserCreate, UserUpdate, ShowUsers, ShowMessage, ShowChats, StartChat, \
-    ChatDetails, CreateMessage
+    ChatDetails, CreateMessage, DeleteMessage
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -40,6 +40,7 @@ urlpatterns = [
     path('messages/', include([
         path('create/', CreateMessage.as_view(), name='message-create-endpoint'),
         path('show/', ShowMessage.as_view(), name='message-show-endpoint'),
+        path('delete/<int:pk>', DeleteMessage.as_view(), name='message-delete-endpoint'),
     ])),
     path('', Main.as_view(), name='main-page'),
 ]

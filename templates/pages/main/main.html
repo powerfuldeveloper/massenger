@@ -2,7 +2,18 @@
 {% load static %}
 
 {% block context %}
-    <!-- BASIC MODAL -->
+    <style>
+        .context-menu a {
+            transition: all 0.5s;
+            color: black !important;
+        }
+
+        .context-menu a:hover {
+            background-color: #0C9A9A;
+            color: white !important;
+        }
+    </style>
+    <!-- Choose Chat Modal -->
     <div id="modaldemo1" class="modal fade">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content bd-0 tx-14">
@@ -29,7 +40,31 @@
             </div>
         </div><!-- modal-dialog -->
     </div><!-- modal -->
-
+    <!-- Message Options Modal -->
+    <div id="modaldemo2" class="modal fade">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content bd-0 tx-14">
+                <div class="modal-header pd-y-20 pd-x-25">
+                    <h6 class="tx-14 mg-b-0 tx-uppercase tx-inverse tx-bold">عملیات پیام</h6>
+                    <button type="button" class="close" style="float: right;margin: -1rem auto -1rem -1rem;"
+                            data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body context-menu modal-context-menu p-0 tx-right">
+                    <a class="btn" style="width: 100%;" data-action="delete">حذف پیام</a>
+                    <a class="btn" style="width: 100%;" data-action="forward">ارسال به فرد دیگری</a>
+                    <a class="btn" style="width: 100%;" data-action="edit">ویرایش پیام</a>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn ir-font btn-secondary tx-12 tx-uppercase pd-y-12 pd-x-25 tx-mont tx-medium mg-l-0 mg-r-5"
+                            data-dismiss="modal">بستن
+                    </button>
+                </div>
+            </div>
+        </div><!-- modal-dialog -->
+    </div><!-- modal -->
     <div class="col-12">
         <div class="row row-sm mg-t-20">
             <div class="col-lg-5 col-xl-4">
@@ -77,6 +112,9 @@
                     <div class="card-footer">
                         <div class="media">
                             <img src="
+
+
+
 
 
                                     {% if request.user.avatar %}{{ request.user.avatar.url }}{% else %}{% static 'img/logo.png' %}{% endif %}"
@@ -163,6 +201,7 @@
 
         var last_user_id = null;
         var last_message_container = null;
+        var modal_data = null;
 
         function show_messages(messages, prepend) {
             for (var m in messages) {
@@ -173,6 +212,10 @@
                     chat_container = $(sent_message);
                 else
                     chat_container = $(received_message);
+                chat_container.dblclick(function () {
+                    $('#modaldemo2').modal('show');
+                    modal_data = this;
+                });
                 var current_message_container;
                 var is_same_as_prev = false;
                 if (prepend) {
@@ -180,13 +223,12 @@
                     if (the_one && the_one.attr('data-ui') && Number(the_one.attr('data-ui')) == message.from_user.id) {
                         is_same_as_prev = true;
                     }
-                 }
+                }
 
                 if (prepend && is_same_as_prev) {
                     chat_container.prepend('<hr class="invisible mg-y-2">');
                     current_message_container = $('.the-messages').first()
-                }
-                else if (last_user_id && last_user_id === message.from_user.id && !prepend) {
+                } else if (last_user_id && last_user_id === message.from_user.id && !prepend) {
                     current_message_container = last_message_container;
                     chat_container.prepend('<hr class="invisible mg-y-2">');
                 } else {
@@ -204,8 +246,18 @@
                 current_message_container.attr('data-ui', message.from_user.id);
 
                 chat_container.find('.chat-holder').text(message.text);
-                if (message.file)
+                chat_container.find('.chat-holder').html(chat_container.find('.chat-holder').html().replace('\n', '<br>'));
+                if (message.file) {
+                    var file_address = message.file;
+                    if (file_address.match('(.png|.jpg|.jpeg|.tiff)$')) {
+                        chat_container.find('.chat-holder').append('<br><br><img style="max-width: 450px" src="' + message.file + '"/>');
+                    } else if (file_address.match('(.mkv|.mp4)$')) {
+                        chat_container.find('.chat-holder').append('<br><br><video style="max-width: 450px" controls><source src="' + message.file + '" type="video/mp4"></video>');
+                    } else if (file_address.match('(.mp3)$')) {
+                        chat_container.find('.chat-holder').append('<br><br><audio controls><source src="' + message.file + '" type="video/mp4"></audio>');
+                    }
                     chat_container.find('.chat-holder').append('<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>');
+                }
                 if (message.from_user.avatar)
                     current_message_container.find('.user-image-holder').attr('src', message.from_user.avatar);
                 chat_container.attr('data-message-id', message.id);
@@ -213,7 +265,7 @@
                     current_message_container.find('.media-body').prepend(chat_container);
                 else
                     current_message_container.find('.media-body').append(chat_container);
-                if (prepend )
+                if (prepend)
                     $('#get-older').parent().after(current_message_container);
                 else if (!prepend)
                     message_container.append(current_message_container);
@@ -385,10 +437,35 @@
             $('#choose-file-button').click(function (e) {
                 $('.file-to-send').click();
             });
+            $('#modaldemo2 .context-menu.modal-context-menu a').click(function () {
+                var action = this.getAttribute('data-action');
+                switch (action) {
+                    case 'delete':
+                        var message_id = modal_data.getAttribute('data-message-id');
+                        var url = '{% url 'message-delete-endpoint' pk=0 %}';
+                        url = url.substr(0, url.length - 1) + message_id;
+                        $.ajax(url, {
+                            method: 'post',
+                            data: {
+                                csrfmiddlewaretoken: csrftoken,
+                            }
+                        }).done(function(e) {
+                            if(e.ok) {
+                                modal_data.remove();
+                                $('#modaldemo2').modal('hide');
+                            }else {
+                                alert('مشکلی رخ داد');
+                            }
+                        });
+                        break;
+                    case 'forward':
+                        break;
+                    case 'edit':
+                        break;
+                }
+            });
         });
 
-        {#setInterval(function () {#}
-        {#    get_latest_updates()#}
-        {# }, 1500);#}
+
     </script>
 {% endblock %}

@@ -1,3 +1,4 @@
+import os
 import time
 
 from django.contrib.auth.models import AbstractUser
@@ -51,3 +52,12 @@ class Message(models.Model):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         super().save(force_insert, force_update, using, update_fields)
         self.chat.save(force_update=True)
+
+    def delete(self, using=None, keep_parents=False):
+        if self.file:
+            try:
+                os.remove(self.file.path)
+            except:
+                pass
+        return super().delete(using, keep_parents)
+

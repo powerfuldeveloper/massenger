@@ -5,6 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.db.models import QuerySet, Q, Model
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import TemplateView, CreateView, UpdateView
@@ -250,3 +251,15 @@ class CreateMessage(LoginRequiredMixin, CreateView):
             })
         message_form.save()
         return JsonResponse({'ok': True})
+
+
+class DeleteMessage(LoginRequiredMixin, View):
+
+    def post(self, request, pk):
+        try:
+            message = get_object_or_404(Message, pk=pk)
+            message.delete()
+            return JsonResponse({'ok': True})
+        except:
+            pass
+        return JsonResponse({'ok': False})
