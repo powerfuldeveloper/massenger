@@ -238,6 +238,16 @@ class ShowMessage(LoginRequiredMixin, PaginationMixIn, View):
             self.qs = self.qs.filter(chat=self.chat, id__gt=self.last_message.id)
 
 
+class GetMessage(LoginRequiredMixin, PaginationMixIn, View):
+    model = Message
+
+    def prepare_qs(self):
+        message_id = self.request.POST.get('message_id')
+
+        if message_id:
+            self.qs = self.qs.filter(pk=int(message_id))
+
+
 class CreateMessage(LoginRequiredMixin, CreateView):
 
     def post(self, request):
@@ -250,6 +260,29 @@ class CreateMessage(LoginRequiredMixin, CreateView):
                 ]
             })
         message_form.save()
+        return JsonResponse({'ok': True})
+
+
+class UpdateMessage(LoginRequiredMixin, View):
+
+    def post(self, request):
+        message_id = request.POST.get('message_id')
+        try:
+            message = Message.objects.get(pk=int(message_id))
+
+            text = request.POST.get('text', '').strip()
+            if text and isinstance(text, str) and len(text) > 0:
+                message.text = text
+                message.save()
+            else:
+                raise Exception()
+        except:
+            return JsonResponse({
+                'ok': False,
+                'messages': [
+                    'BAD_PARAMETERS'
+                ]
+            })
         return JsonResponse({'ok': True})
 
 

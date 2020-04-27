@@ -12,6 +12,21 @@
             background-color: #0C9A9A;
             color: white !important;
         }
+
+        .is-not-sender {
+            text-align: left !important;
+            direction: ltr !important;
+        }
+
+        .is-not-sender img{
+            margin-left: 0;
+            margin-right: 20px;
+        }
+
+        .is-not-sender .chat-holder{
+            text-align: right;
+            direction: rtl;
+        }
     </style>
     <!-- Choose Chat Modal -->
     <div id="modaldemo1" class="modal fade">
@@ -111,13 +126,9 @@
                     </div><!-- card-body -->
                     <div class="card-footer">
                         <div class="media">
-                            <img src="
-
-
-
-
-
-                                    {% if request.user.avatar %}{{ request.user.avatar.url }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+                            <img src="{% if request.user.avatar %}
+{{ request.user.avatar.url }}{% else %}
+{% static 'img/logo.png' %}{% endif %}"
                                  class="wd-36 rounded-circle mg-l-20" alt="">
                             <div class="media-body">
                             <textarea id="message-input" type="text" class="form-control tx-12"
@@ -144,6 +155,7 @@
 
         var ps_container = document.querySelector('.messages-container').parentElement;
         ps_container.style.height = window.screen.availHeight - 330 + 'px';
+        var prev_chat_id = null;
         var ps = new PerfectScrollbar(ps_container);
         var csrftoken = $("[name=csrfmiddlewaretoken]").val();
         var current_user_id = Number($(".sidebar-users-list-view").attr('data-cu-id'));
@@ -208,8 +220,11 @@
                 var message = messages[m];
                 var c = last_user_id == null;
                 var chat_container;
-                if (message.from_user.id === current_user_id)
+                var is_sender = false;
+                if (message.from_user.id === current_user_id){
                     chat_container = $(sent_message);
+                    is_sender = true;
+                }
                 else
                     chat_container = $(received_message);
                 chat_container.dblclick(function () {
@@ -246,7 +261,7 @@
                 current_message_container.attr('data-ui', message.from_user.id);
 
                 chat_container.find('.chat-holder').text(message.text);
-                chat_container.find('.chat-holder').html(chat_container.find('.chat-holder').html().replace('\n', '<br>'));
+                chat_container.find('.chat-holder').html(chat_container.find('.chat-holder').html().split('\n').join('<br>'));
                 if (message.file) {
                     var file_address = message.file;
                     if (file_address.match('(.png|.jpg|.jpeg|.tiff)$')) {
@@ -258,19 +273,24 @@
                     }
                     chat_container.find('.chat-holder').append('<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>');
                 }
-                if (message.from_user.avatar)
-                    current_message_container.find('.user-image-holder').attr('src', message.from_user.avatar);
-                chat_container.attr('data-message-id', message.id);
-                if (prepend)
-                    current_message_container.find('.media-body').prepend(chat_container);
-                else
-                    current_message_container.find('.media-body').append(chat_container);
-                if (prepend)
-                    $('#get-older').parent().after(current_message_container);
-                else if (!prepend)
-                    message_container.append(current_message_container);
-                if (!prepend)
-                    message_container.attr('last-message-id', message.id);
+                if (message.chat.id == prev_chat_id) {
+                    if (message.from_user.avatar)
+                        current_message_container.find('.user-image-holder').attr('src', message.from_user.avatar);
+                    chat_container.attr('data-message-id', message.id);
+                    if (prepend)
+                        current_message_container.find('.media-body').prepend(chat_container);
+                    else
+                        current_message_container.find('.media-body').append(chat_container);
+                    if (!is_sender) {
+                        current_message_container.addClass('is-not-sender');
+                    }
+                    if (prepend)
+                        $('#get-older').parent().after(current_message_container);
+                    else if (!prepend)
+                        message_container.append(current_message_container);
+                    if (!prepend)
+                        message_container.attr('last-message-id', message.id);
+                }
             }
             ps.update();
         }
@@ -318,15 +338,23 @@
 
         $('#send-message-button').click(function () {
             var form_data = new FormData();
-            var message = $('#message-input').val();
-            if ($('.file-to-send')[0].files.length)
-                form_data.append('file', $('.file-to-send')[0].files[0]);
             form_data.append('csrfmiddlewaretoken', csrftoken);
-            form_data.append('from_user', String(current_user_id));
-            form_data.append('to_user', message_container.attr('data-tu'));
-            form_data.append('chat', message_container.attr('data-ci'));
-            form_data.append('text', message);
-            $.ajax('{% url 'message-create-endpoint' %}', {
+            var message = $('#message-input').val();
+            url = '';
+            if (message_container.hasClass('editing')) {
+                url = '{% url 'message-update-endpoint' %}';
+                form_data.append('message_id', message_container.attr('editing-message-id'));
+                form_data.append('text', message);
+            }else {
+                if ($('.file-to-send')[0].files.length)
+                    form_data.append('file', $('.file-to-send')[0].files[0]);
+                form_data.append('from_user', String(current_user_id));
+                form_data.append('to_user', message_container.attr('data-tu'));
+                form_data.append('chat', message_container.attr('data-ci'));
+                form_data.append('text', message);
+                url = '{% url 'message-create-endpoint' %}';
+            }
+            $.ajax(url, {
                 method: 'post',
                 data: form_data,
                 enctype: 'multipart/form-data',
@@ -334,7 +362,12 @@
                 processData: false,
             }).done(function (e) {
                 if (e.ok) {
-                    get_latest_messages();
+                    if (message_container.hasClass('editing')) {
+                        let message_id = message_container.attr('editing-message-id');
+                        $('[data-message-id="'+ message_id +'"] .chat-holder').text(message.split('\n').join('<br>'));
+                    } else {
+                        get_latest_messages();
+                    }
                     $('#message-input').val('')
                 } else {
                     alert('اطلاعات ارسال شده اشتباه است')
@@ -363,10 +396,17 @@
                         }
                         var user_perview_model_clone = $(user_preview_model);
                         user_perview_model_clone.attr('data-ci', e.data[u].id);
-                        user_perview_model_clone.click(function (e) {
-                            e.preventDefault();
-                            show_chat(this.getAttribute('data-ci'))
-                        });
+                        user_perview_model_clone.click(function (a) {
+                            return function (e) {
+                                e.preventDefault();
+                                prev_chat_id = a;
+                                if (message_container.hasClass('editing')) {
+                                    message_container.removeClass('editing');
+                                    $('#message-input').val('');
+                                }
+                                show_chat(this.getAttribute('data-ci'))
+                            }
+                        }(e.data[u].id));
                         if (user.avatar)
                             user_perview_model_clone.find('.image-holder').attr('src', user.avatar);
                         user_perview_model_clone.find('.name-holder').text(user.first_name + ' ' + user.last_name);
@@ -402,16 +442,14 @@
             }
         }
 
-        function get_latest_updates() {
-            $.ajax('{% url 'chat-show-endpoint' %}', {}).done(function (e) {
-
-            })
-        }
+        setInterval(function () {
+            get_latest_messages();
+        }, 1000);
 
         function load_older() {
             var first_the_message = $('.the-messages').first();
             if (first_the_message) {
-                first_the_message = first_the_message.find('.the-message-container').first()
+                first_the_message = first_the_message.find('.the-message-container').first();
                 if (first_the_message) {
                     $.ajax('{% url 'chat-detail-endpoint' %}', {
                         method: 'post',
@@ -422,7 +460,6 @@
                         },
                     }).done(function (e) {
                         if (e.data.messages.length) {
-                            console.log(e.data.messages);
                             show_messages(e.data.messages, true);
                         }
                     });
@@ -431,6 +468,14 @@
         }
 
         $(document).ready(function () {
+            $(document).keyup(function(e) {
+                if (e.key === 'Escape') {
+                    if (message_container.hasClass('editing')) {
+                        message_container.removeClass('editing');
+                        $('#message-input').val('');
+                    }
+                }
+            });
             $('#update_all_chats').click(retrieve_new_data);
             $('#update_chat').click(get_latest_messages);
             $('#get-older').click(load_older);
@@ -439,9 +484,9 @@
             });
             $('#modaldemo2 .context-menu.modal-context-menu a').click(function () {
                 var action = this.getAttribute('data-action');
+                var message_id = modal_data.getAttribute('data-message-id');
                 switch (action) {
                     case 'delete':
-                        var message_id = modal_data.getAttribute('data-message-id');
                         var url = '{% url 'message-delete-endpoint' pk=0 %}';
                         url = url.substr(0, url.length - 1) + message_id;
                         $.ajax(url, {
@@ -449,11 +494,15 @@
                             data: {
                                 csrfmiddlewaretoken: csrftoken,
                             }
-                        }).done(function(e) {
-                            if(e.ok) {
+                        }).done(function (e) {
+                            if (e.ok) {
+                                if (message_container.hasClass('editing')) {
+                                    message_container.removeClass('editing');
+                                    $('#message-input').val('');
+                                }
                                 modal_data.remove();
                                 $('#modaldemo2').modal('hide');
-                            }else {
+                            } else {
                                 alert('مشکلی رخ داد');
                             }
                         });
@@ -461,6 +510,22 @@
                     case 'forward':
                         break;
                     case 'edit':
+                        $.ajax('{% url 'message-get-endpoint' %}', {
+                            method: 'post',
+                            data: {
+                                csrfmiddlewaretoken: csrftoken,
+                                message_id: message_id,
+                            }
+                        }).done(function (e) {
+                            if (e.ok && e.data.length > 0){
+                                $('#message-input').val(e.data[0].text);
+                                message_container.addClass('editing');
+                                message_container.attr('editing-message-id', message_id);
+                                $('#modaldemo2').modal('hide');
+                            }else {
+                                alert('پیام درخواستی شما موجود نمی باشد');
+                            }
+                        });
                         break;
                 }
             });
