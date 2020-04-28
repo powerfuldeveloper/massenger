@@ -27,6 +27,49 @@
             text-align: right;
             direction: rtl;
         }
+
+        .chat-part{
+            transition:background-color 1s ease-in-out;
+        }
+
+        .forward .chat-part{
+            background-color: #ef6d10;
+        }
+
+        .chat-holder {
+            padding-bottom: 1px !important;
+        }
+        .chat-holder .chat-time-container {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            text-align: right;
+        }
+        .chat-holder .chat-time {
+            font-size: 10px;
+            margin: 0 0 0 5px !important;
+        }
+        .chat-holder .check-container {
+            display: inline;
+            position: relative;
+            font-size: 10px;
+            margin: 0 0 0 5px !important;
+        }
+
+        .chat-holder .check-container i {
+            position: absolute;
+            text-shadow: 0 0 5px white;
+            top: 1px;
+            left: -7px;
+        }
+
+        .chat-holder .check-container i:last-child {
+            left: -12px;
+        }
+
+        .chat-holder.not-read .check-container i:last-child {
+            color: white;
+        }
     </style>
     <!-- Choose Chat Modal -->
     <div id="modaldemo1" class="modal fade">
@@ -83,7 +126,7 @@
     <div class="col-12">
         <div class="row row-sm mg-t-20">
             <div class="col-lg-5 col-xl-4">
-                <div class="card widget-5">
+                <div class="card widget-5 chat-part">
                     <div class="card-header">
                         <span>پیام ها
                         <a href="#" class="btn btn-dark btn-icon rounded-circle text-white" id="update_all_chats"><div><i
@@ -159,11 +202,12 @@
         var ps = new PerfectScrollbar(ps_container);
         var csrftoken = $("[name=csrfmiddlewaretoken]").val();
         var current_user_id = Number($(".sidebar-users-list-view").attr('data-cu-id'));
+        var forward_message_id = null;
         var user_preview_model = '<a href="" class="list-group-item list-group-item-action media"><img class="image-holder" src="{% static 'img/logo.png' %}" alt=""><div class="media-body"><div class="msg-top"><span class="name-holder">سیدمحمد محمدی</span><span class="time-holder"></span></div><p class="msg-summary"></p></div></a>';
         var message_container = $('.messages-container');
         var message_template_container = '<div class="the-messages media mg-t-20"><img  src="https://via.placeholder.com/500" class="user-image-holder wd-36 rounded-circle mg-l-20" alt=""><div class="media-body tx-12"></div></div>'
-        var sent_message = `<div class="the-message-container"><div class="chat-holder chat-1"></div><span class="chat-time"></span></div>`;
-        var received_message = '<div class="the-message-container"><div class="chat-holder chat-2"></div><span class="chat-time"></span></div>';
+        var sent_message = `<div class="the-message-container"><div class="chat-holder not-read chat-1"><p class="mb-0"></p><div class="chat-time-container"><span class="chat-time" style="direction: rtl"></span><div class="check-container"><i class="fas fa-check"></i><i class="fas fa-check"></i></div></div></div></div>`;
+        var received_message = '<div class="the-message-container"><div class="chat-holder not-read chat-2"><p class="mb-0"></p><div class="chat-time-container"><span class="chat-time" style="direction: rtl"></span><div class="check-container"><i class="fas fa-check"></i><i class="fas fa-check"></i></div></div></div></div>';
         $('#modaldemo1').on('show.bs.modal', function () {
             $('#modaldemo1 .the-cool-loader').removeClass('d-none').addClass('d-flex');
             $('.modal-users-list-view .list-group-item').remove();
@@ -227,6 +271,12 @@
                 }
                 else
                     chat_container = $(received_message);
+                var tt = message.updated ? message.updated_at:message.created_at;
+                chat_container.find('.chat-time').text(`${tt[0]}/${tt[1]}/${tt[2]} ${tt[3]}:${tt[4]}:${tt[5]}`)
+                console.log(message.seen)
+                if (message.seen) {
+                    chat_container.find('.chat-holder').removeClass('not-read');
+                }
                 chat_container.dblclick(function () {
                     $('#modaldemo2').modal('show');
                     modal_data = this;
@@ -260,8 +310,10 @@
 
                 current_message_container.attr('data-ui', message.from_user.id);
 
-                chat_container.find('.chat-holder').text(message.text);
-                chat_container.find('.chat-holder').html(chat_container.find('.chat-holder').html().split('\n').join('<br>'));
+                var the_p = chat_container.find('.chat-holder p');
+                the_p.text(message.text);
+                the_p.html(the_p.html().split('\n').join('<br>'));
+
                 if (message.file) {
                     var file_address = message.file;
                     if (file_address.match('(.png|.jpg|.jpeg|.tiff)$')) {
@@ -337,6 +389,7 @@
         });
 
         $('#send-message-button').click(function () {
+            $('body').removeClass('forward');
             var form_data = new FormData();
             form_data.append('csrfmiddlewaretoken', csrftoken);
             var message = $('#message-input').val();
@@ -398,13 +451,26 @@
                         user_perview_model_clone.attr('data-ci', e.data[u].id);
                         user_perview_model_clone.click(function (a) {
                             return function (e) {
+                                var chat_id = this.getAttribute('data-ci');
+                                if ($('body').hasClass('forward')){
+                                    $.ajax('{% url 'message-create-endpoint' %}', {
+                                        method: 'post',
+                                        data: {
+                                            csrfmiddlewaretoken: csrftoken,
+                                            forward_message: forward_message_id,
+                                            chat_id: chat_id,
+                                        }
+                                    }).done(function(e) {
+                                    });
+                                    $('body').removeClass('forward');
+                                }
                                 e.preventDefault();
                                 prev_chat_id = a;
                                 if (message_container.hasClass('editing')) {
                                     message_container.removeClass('editing');
                                     $('#message-input').val('');
                                 }
-                                show_chat(this.getAttribute('data-ci'))
+                                show_chat(chat_id)
                             }
                         }(e.data[u].id));
                         if (user.avatar)
@@ -474,6 +540,9 @@
                         message_container.removeClass('editing');
                         $('#message-input').val('');
                     }
+                    if ($('body').hasClass('forward')) {
+                        $('body').removeClass('forward');
+                    }
                 }
             });
             $('#update_all_chats').click(retrieve_new_data);
@@ -508,6 +577,9 @@
                         });
                         break;
                     case 'forward':
+                        $('body').addClass('forward');
+                        forward_message_id = message_id;
+                        $('#modaldemo2').modal('hide');
                         break;
                     case 'edit':
                         $.ajax('{% url 'message-get-endpoint' %}', {

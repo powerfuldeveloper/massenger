@@ -7,6 +7,7 @@ from django.db.models import QuerySet, Q, Model
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView, CreateView, UpdateView
 
@@ -190,6 +191,7 @@ class ChatDetails(LoginRequiredMixin, PaginationMixIn, View):
         older_than = self.request.POST.get('older_than')
         if older_than:
             self.qs = self.qs.filter(id__lt=int(older_than))
+        self.qs.exclude(from_user=self.request.user).update(seen_at=timezone.now())
 
     def prepare_data(self):
         u_messages = super().prepare_data()
@@ -229,13 +231,15 @@ class ShowMessage(LoginRequiredMixin, PaginationMixIn, View):
             return JsonResponse({
                 'ok': False,
                 'messages': [
-                    'OBJECT_DOES_NOT_EXIST' if isinstance(e, Model.DoesNotExist) else 'BAD_PARAMETERS'
+                    'OBJECT_DOES_NOT_EXIST' if isinstance(e, Message.DoesNotExist) else f'BAD_PARAMETERS {{ {e} }}'
                 ],
             })
 
     def prepare_qs(self):
         if self.chat and self.last_message:
             self.qs = self.qs.filter(chat=self.chat, id__gt=self.last_message.id)
+
+        d = self.qs.exclude(from_user=self.request.user)
 
 
 class GetMessage(LoginRequiredMixin, PaginationMixIn, View):
@@ -248,9 +252,35 @@ class GetMessage(LoginRequiredMixin, PaginationMixIn, View):
             self.qs = self.qs.filter(pk=int(message_id))
 
 
-class CreateMessage(LoginRequiredMixin, CreateView):
+class CreateMessage(LoginRequiredMixin, View):
 
     def post(self, request):
+        forward_message = request.POST.get('forward_message')
+        chat_id = request.POST.get('chat_id')
+        if forward_message:
+            if isinstance(forward_message, str) and forward_message.isdigit():
+                try:
+                    message = Message.objects.get(pk=int(forward_message))
+                    chat = Chat.objects.get(pk=int(chat_id))
+                    message.pk = None
+                    message.chat = chat
+                    message.from_user = request.user
+                    message.save()
+                    return JsonResponse({'ok': True})
+                except Exception as e:
+                    return JsonResponse({
+                        'ok': False,
+                        'messages': [
+                            'BAD_PARAMETERS'
+                        ]
+                    })
+            else:
+                return JsonResponse({
+                    'ok': False,
+                    'messages': [
+                        'BAD_PARAMETERS'
+                    ]
+                })
         message_form = MessageCreationForm(self.request.POST, self.request.FILES)
         if not message_form.is_valid():
             return JsonResponse({
