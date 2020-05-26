@@ -25,7 +25,7 @@
                     <div class="alert alert-success">{{ message }}</div>
                 {% endfor %}
             {% endif %}
-            <form method="post" class="form-layout form-layout-1" enctype="multipart/form-data">
+            <form method="post" autocomplete="off" class="form-layout form-layout-1" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="row mg-b-25">
                     <div class="col-lg-4">
@@ -55,7 +55,7 @@
                     <div class="col-lg-4">
                         <div class="form-group">
                             <label class="form-control-label">کلمه عبور: </label>
-                            <input class="form-control" type="password" name="password"
+                            <input class="form-control" type="password" value="" autocomplete="off" name="password"
                                    placeholder="کلمه عبور">
                         </div>
                     </div><!-- col-4 -->
@@ -77,23 +77,17 @@
 
 {% block scripts %}
     <script src="{% static 'lib/highlightjs/highlight.pack.min.js' %}"></script>
-    <script src="{% static 'lib/datatables.net/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'lib/datatables.net-dt/js/dataTables.dataTables.min.js' %}"></script>
-    <script src="{% static 'lib/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
-    <script src="{% static 'lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js' %}"></script>
     <script>
-        $('#datatable1').DataTable({
-            lengthChange: false,
-            ordering: false,
-            rowCallback: function(row, data) {
-                $('td:nth-child(4)',row).append('<a href="#" class="btn btn-danger btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-recycle"></i></div></a>')
-                $('td:nth-child(4)',row).append('<a href="#" class="btn btn-dark btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-pen"></i></div></a>')
-            },
-            language: {
-                searchPlaceholder: 'جستجو ...',
-                sSearch: '',
-                info: "نمایش __END_ از _TOTAL_ داده",
-            }
-        });
-    </script>
+	$(document).ready(function() {
+	    var password = $('[type="password"]');
+		$('form').submit(function() {
+		    if(password.val().trim().length > 0)
+		        if (!confirm('آیا تمایل به تغییر پسورد دارید ؟')){
+		            password.val('');
+		        }
+
+			return true;
+		});
+	});
+	</script>
 {% endblock %}
