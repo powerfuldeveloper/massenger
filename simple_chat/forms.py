@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm as DUserCreationForm, UserChangeForm
+from django.contrib.auth.hashers import make_password
 from django.forms import CharField, ImageField, models
 
 from user.models import Message
@@ -35,8 +36,10 @@ class UserUpdateForm(UserChangeForm):
         del self.fields['date_joined']
 
     def save(self, commit=True):
-        saved = super().save(commit)
-        self.instance.set_password(self.cleaned_data['password'])
+        saved = super().save(False)
+        if len(self.cleaned_data['password']) > 0 and len(self.data['password']) > 0:
+            self.instance.password = make_password(self.data['password'])
+        self.instance.save()
         return saved
 
 

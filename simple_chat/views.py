@@ -3,16 +3,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
-from django.db.models import QuerySet, Q, Model
-from django.http import JsonResponse
+from django.db.models import QuerySet, Q
+from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView, CreateView, UpdateView
 
 from simple_chat.forms import UserCreationForm, UserUpdateForm, MessageCreationForm
-from user.models import Message, Chat
+from user.models import Message, Chat, CUser
 
 
 class Login(LoginView):
@@ -34,7 +34,7 @@ class UserCreate(LoginRequiredMixin, CreateView):
         res = super().form_valid(form)
         self.object.first_name = form.cleaned_data['first_name']
         self.object.last_name = form.cleaned_data['last_name']
-        self.object.set_password(form.cleaned_data['password'])
+        self.object.set_password(form.cleaned_data['password1'])
         self.object.save()
         return res
 
@@ -56,8 +56,6 @@ class UserUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         res = super().form_valid(form)
-        self.object.set_password(form.cleaned_data['password'])
-        self.object.save()
         return res
 
     def get_context_data(self, **kwargs):
@@ -68,6 +66,21 @@ class UserUpdate(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         messages.success(self.request, 'کاربر با موفقیت بروزرسانی شد')
         return super().get_success_url()
+
+
+class UserDelete(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        try:
+            user = CUser.objects.get(pk=pk)
+            if user.is_superuser:
+                messages.error(request, 'این کاربر نباید حذف شود')
+                return HttpResponseRedirect(reverse('user-page'))
+            messages.success(request, 'کاربر با موفقیت حذف شد')
+            user.delete()
+            return HttpResponseRedirect(reverse('user-page'))
+        except:
+            messages.error(request, 'کاربر مورد نظر موجود نمیباشد')
+            return HttpResponseRedirect(reverse('user-page'))
 
 
 class BasicAttrsMixIn:

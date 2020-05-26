@@ -121,6 +121,15 @@
     <script src="{% static 'lib/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
     <script src="{% static 'lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js' %}"></script>
     <script>
+		function deleteUser(pk) {
+
+		    if(confirm('آیا این کابر حدف شود ؟')) {
+				var delete_url = "{% url "user-delete" pk=0 %}";
+				delete_url = delete_url.substr(0, delete_url.length - 1);
+				delete_url = delete_url + pk;
+				window.location.href = delete_url;
+			}
+		}
         $('#datatable1').DataTable({
             lengthChange: false,
             ordering: false,
@@ -131,7 +140,8 @@
                 var url = "{% url 'user-update-page' pk=0  %}";
                 url = url.substr(0, url.length - 1);
                 url = url + data[0];
-                $('td:nth-child(4)', row).append('<a href="#" class="btn btn-danger btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-recycle"></i></div></a>')
+                $('td:nth-child(4)', row).empty();
+                $('td:nth-child(4)', row).append('<a onclick="deleteUser('+data[0]+');" class="btn btn-danger btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-recycle"></i></div></a>')
                 $('td:nth-child(4)', row).append('<a href="' + url + '" class="btn btn-dark btn-icon rounded-circle mg-r-5 mg-b-10"><div><i class="fa fa-pen"></i></div></a>')
             },
             language: {

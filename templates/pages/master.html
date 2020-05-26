@@ -118,12 +118,10 @@
               <div class="tx-center">
                 <a href=""><img src="{% if request.user.avatar %}{{request.user.avatar.url}}{% endif %}" class="wd-80 rounded-circle" alt=""></a>
                 <h6 class="logged-fullname">{{ request.user.get_full_name|default:request.user.username }}</h6>
-                <p>husseinmirzaki@gmail.com</p>
+                <p>{{request.user.username}}</p>
               </div>
               <hr>
               <ul class="list-unstyled user-profile-nav">
-                <li><a href=""><i class="icon ion-ios-person"></i> ویرایش پروفایل</a></li>
-                <li><a href=""><i class="icon ion-ios-gear"></i> تنظیمات</a></li>
                 <li><a href="{% url 'logout' %}"><i class="icon ion-power"></i> خروج</a></li>
               </ul>
             </div><!-- dropdown-menu -->
