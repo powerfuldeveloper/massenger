@@ -33,12 +33,14 @@
             <span class="menu-item-label">صفحه اصلی</span>
           </a><!-- br-menu-link -->
         </li><!-- br-menu-item -->
-        <li class="br-menu-item">
-          <a href="{% url 'user-page' %}" class="br-menu-link">
-            <i class="menu-item-icon icon ion-ios-contact tx-24"></i>
-            <span class="menu-item-label">کاربران</span>
-          </a><!-- br-menu-link -->
-        </li><!-- br-menu-item -->
+		  {% if request.user.is_superuser %}
+			  <li class="br-menu-item">
+				  <a href="{% url 'user-page' %}" class="br-menu-link">
+					  <i class="menu-item-icon icon ion-ios-contact tx-24"></i>
+					  <span class="menu-item-label">کاربران</span>
+				  </a><!-- br-menu-link -->
+			  </li><!-- br-menu-item -->
+		  {% endif %}
 {#        <li class="br-menu-item">#}
 {#          <a href="#" class="br-menu-link with-sub">#}
 {#            <i class="menu-item-icon icon ion-ios-photos-outline tx-20"></i>#}
@@ -64,51 +66,6 @@
       <div class="br-header-right">
         <nav class="nav">
           <div class="dropdown">
-            <a href="" class="nav-link pd-x-7 pos-relative" data-toggle="dropdown">
-              <i class="icon ion-ios-email-outline tx-24"></i>
-              <!-- start: if statement -->
-              <span class="square-8 bg-danger pos-absolute t-15 r-0 rounded-circle"></span>
-              <!-- end: if statement -->
-            </a>
-            <div class="dropdown-menu dropdown-menu-header">
-              <div class="dropdown-menu-label">
-                <label>پیام ها</label>
-                <a href="">+ ارسال پیام جدید</a>
-              </div><!-- d-flex -->
-
-              <div class="media-list ">
-                <!-- loop starts here -->
-                <a href="" class="media-list-link">
-                  <div class="media">
-                    <img src="https://via.placeholder.com/500" alt="">
-                    <div class="media-body">
-                      <div>
-                        <p>سیدمحمدحسین</p>
-                        <span>دو دقیقه قبل</span>
-                      </div><!-- d-flex -->
-                      <p>یک پیام بسیار خوب که شما هم میتوانید با استفاده آن به جای جای ایران بزرگ دسترسی داشته باشید</p>
-                    </div>
-                  </div><!-- media -->
-                </a>
-                <a href="" class="media-list-link read">
-                  <div class="media">
-                    <img src="https://via.placeholder.com/500" alt="">
-                    <div class="media-body">
-                      <div>
-                        <p>سیدمحمدحسین</p>
-                        <span>دو دقیقه قبل</span>
-                      </div><!-- d-flex -->
-                      <p>یک پیام بسیار خوب که شما هم میتوانید با استفاده آن به جای جای ایران بزرگ دسترسی داشته باشید</p>
-                    </div>
-                  </div><!-- media -->
-                </a>
-                <div class="dropdown-footer">
-                  <a href=""><i class="fa fa-angle-down"></i> نمایش تمام پیام ها</a>
-                </div>
-              </div><!-- media-list -->
-            </div><!-- dropdown-menu -->
-          </div><!-- dropdown -->
-          <div class="dropdown">
             <a href="" class="nav-link nav-link-profile" data-toggle="dropdown">
               <span class="logged-name hidden-md-down">{{ request.user.first_name|default:request.user.username }}</span>
               <img src="{% if request.user.avatar != '' and request.user.avatar %}{{request.user.avatar.url}}{% else %}{% static 'img/img11.jpg' %}{% endif %}" class="wd-32 rounded-circle" alt="">
@@ -122,6 +79,7 @@
               </div>
               <hr>
               <ul class="list-unstyled user-profile-nav">
+			    <li><a href="{% url 'user-update-page' pk=request.user.id %}"><i class="icon ion-ios-person"></i> ویرایش پروفایل</a></li>
                 <li><a href="{% url 'logout' %}"><i class="icon ion-power"></i> خروج</a></li>
               </ul>
             </div><!-- dropdown-menu -->

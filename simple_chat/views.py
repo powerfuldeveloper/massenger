@@ -30,6 +30,12 @@ class UserCreate(LoginRequiredMixin, CreateView):
     template_name = 'pages/users/users.html'
     model = get_user_model()
 
+    def dispatch(self, request, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            messages.error(request, 'صفحه مورد نظر قابل بازیابی نیست')
+            return HttpResponseRedirect(reverse('main-page'))
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         res = super().form_valid(form)
         self.object.first_name = form.cleaned_data['first_name']
@@ -54,6 +60,12 @@ class UserUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'pages/users/edit-users.html'
     model = get_user_model()
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user:
+            if not request.user.is_superuser and kwargs['pk'] != request.user.pk:
+                return HttpResponseRedirect(reverse('user-update-page', kwargs={'pk': request.user.pk}))
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         res = super().form_valid(form)
         return res
@@ -65,6 +77,8 @@ class UserUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(self.request, 'کاربر با موفقیت بروزرسانی شد')
+        if not self.request.user.is_superuser:
+            return reverse('main-page')
         return super().get_success_url()
 
 
