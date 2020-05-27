@@ -133,9 +133,9 @@
 						</button>
 					</div>
 					<div class="modal-body context-menu modal-context-menu p-0 tx-right">
-						<a class="btn" style="width: 100%;" data-action="delete">حذف پیام</a>
-						<a class="btn" style="width: 100%;" data-action="forward">ارسال به فرد دیگری</a>
-						<a class="btn" style="width: 100%;" data-action="edit">ویرایش پیام</a>
+						<a class="btn" v-if="messageToOption && messageToOption.from_user.id == me.id" style="width: 100%;" @click.prevent="deleteMessage">حذف پیام</a>
+						<a class="btn" style="width: 100%;">ارسال به فرد دیگری</a>
+						<a class="btn" v-if="messageToOption && messageToOption.from_user.id == me.id" style="width: 100%;" @click.prevent="editMessageView">ویرایش پیام</a>
 					</div>
 					<div class="modal-footer">
 						<button type="button"
@@ -224,10 +224,11 @@
 										  class="user-image-holder wd-36 rounded-circle mg-l-20" alt="">
 									<div class="media-body tx-12">
 										{% verbatim %}
-										<div class="the-message-container mt-2"  v-for="message in chatPart" v-bind:message_id="message.id">
+										<div class="the-message-container mt-2"  v-for="message in chatPart" @dblclick="messageOptions(message)" v-bind:message_id="message.id">
 											<div class="chat-holder"
 												 v-bind:class="[message.from_user.id != me.id ? 'chat-1':'chat-2', !message.seen ? 'not-read' :'']">
 												<p class="mb-0">{{ message.text }}</p>
+												<div v-html="filePreview(message)"></div>
 												<div class="chat-time-container">
 													<span class="chat-time" style="direction: rtl">
 														{{ printDate(message.updated_at) }}
@@ -255,12 +256,15 @@
                             <textarea id="message-input" ref="textMessage"
 											v-on:keyup.enter="sendMessage" type="text" class="form-control tx-12"
 									  placeholder="پیام خودرا بنویسید"></textarea>
+									{% verbatim %}
 									<button type="button" id="send-message-button"
 											v-on:click.prevent="sendMessage"
-											class="btn btn-primary btn-sm mt-2 float-left">ارسال پیام
+											class="btn btn-primary btn-sm mt-2 float-left">
+										{{ messageToOption ? 'ویرایش پیام':'ارسال پیام' }}
 									</button>
-									<input type="file" style="display: none;" class="file-to-send"/>
-									<button type="button" style="margin-left: 10px;" id="choose-file-button"
+									{% endverbatim %}
+									<input type="file" style="display: none;" ref="file-to-send"/>
+									<button type="button" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].click()"
 											class="btn btn-primary btn-sm mt-2 float-left">انتخاب فایل
 									</button>
 								</div><!-- media-body -->
@@ -294,6 +298,7 @@
 				chatsBellow: [],
                 lastChatBellow: null,
                 intervalId: null,
+				messageToOption: null,
             },
 			mounted: function() {
                 this.getMe(() => {
@@ -306,6 +311,9 @@
                 this.intervalId = setInterval(() => {
                     if (this.currentChat)
                     	this.applySeen();
+				}, 2000);
+                this.intervalId = setInterval(() => {
+					this.getUserChats();
 				}, 2000);
 			},
             methods: {
@@ -395,14 +403,22 @@
                         this.chatUsers = e.data;
                     });
                 },
-				clearChat: function() {
-                    this.chattingWith=null;
-                    this.chatsAbove = [];
-                    this.lastChatAbove = null;
-                    this.lastChatAboveUser = null;
-                    this.chatsBellow = [];
-                    this.lastChatBellow = null;
-                    this.lastChatBellowUser = null;
+				clearChat: function(event) {
+                    console.log(event);
+                    if (this.messageToOption) {
+                        this.messageToOption = null;
+                        this.$refs.textMessage.value = '';
+                    } else {
+                        if (event && event instanceof KeyboardEvent)
+                            this.currentChat = null;
+						this.chattingWith=null;
+						this.chatsAbove = [];
+						this.lastChatAbove = null;
+						this.lastChatAboveUser = null;
+						this.chatsBellow = [];
+						this.lastChatBellow = null;
+						this.lastChatBellowUser = null;
+                    }
 				},
 				getChatMessages: function(prepend, chat, append) {
                     // initializes
@@ -482,12 +498,11 @@
                     return `${d[3]}:${d[4]}:${d[5]} ${d[0]}/${d[1]}/${d[2]} `;
                 },
 				sendMessage: function (e) {
-                    if(e) {
+                    if(e && e instanceof KeyboardEvent) {
                         if (!e.ctrlKey){
                             return;
                         }
 						e.preventDefault();
-
                     }
                     var textInput = this.$refs['textMessage'];
                     var form_data = new FormData();
@@ -497,12 +512,24 @@
                         alert('پیام نمیتواند خالی باشد');
 						return;
                     }
-                    form_data.append('from_user', String(this.me.id));
-					form_data.append('to_user', String(this.chattingWith.id));
-					form_data.append('chat', String(this.currentChat.id));
-					form_data.append('text', message);
-					console.log(form_data);
-					$.ajax('{% url 'message-create-endpoint' %}', {
+                    if (this.messageToOption) {
+                        form_data.append('message_id', this.messageToOption.id);
+						form_data.append('text', message);
+                    } else {
+						if (this.$refs['file-to-send'].files.length)
+							form_data.append('file', this.$refs['file-to-send'].files[0]);
+						form_data.append('from_user', String(this.me.id));
+						form_data.append('to_user', String(this.chattingWith.id));
+						form_data.append('chat', String(this.currentChat.id));
+						form_data.append('text', message);
+                    }
+
+					var endPoint = null;
+					if (!this.messageToOption)
+						endPoint = '{% url 'message-create-endpoint' %}';
+					else
+					    endPoint = '{% url 'message-update-endpoint' %}';
+					$.ajax(endPoint, {
 						method: 'post',
 						data: form_data,
 						enctype: 'multipart/form-data',
@@ -510,13 +537,70 @@
 						processData: false,
 					}).done((e) => {
 					    if (e.ok) {
+					        if(this.messageToOption) {
+								for(const bellowIndex in this.chatsBellow) {
+									var found = this.chatsBellow[bellowIndex].findIndex((el) => el.id === this.messageToOption.id);
+									if (found > -1)
+										this.chatsBellow[bellowIndex][found].text = message;
+								}
+								this.messageToOption = null;
+							} else {
 						    this.getChatMessages(false, null, true);
+							}
 							textInput.value= '';
 						} else {
 							alert('اطلاعات ارسال شده اشتباه است')
 						}
 					})
-                }
+                },
+                filePreview: function (message) {
+                    if (message.file) {
+						var file_address = message.file;
+						if (file_address.match('(.png|.jpg|.jpeg|.tiff)$')) {
+							return '<br><br><img style="max-width: 450px" src="' + message.file + '"/>';
+						} else if (file_address.match('(.mkv|.mp4)$')) {
+							return '<br><br><video style="max-width: 450px" controls><source src="' + message.file + '" type="video/mp4"></video>';
+						} else if (file_address.match('(.mp3)$')) {
+							return '<br><br><audio controls><source src="' + message.file + '" type="video/mp4"></audio>';
+						}
+						return '<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>';
+					}
+				},
+				messageOptions: function(message) {
+                    $('#modaldemo2').modal('show');
+                    this.messageToOption = message;
+                },
+                deleteMessage: function() {
+                    if(!confirm('آیا تمایل به حدف این پیام دارید ؟'))
+                        return;
+                    var url = '{% url 'message-delete-endpoint' pk=0 %}';
+					url = url.substr(0, url.length - 1) + this.messageToOption.id;
+					$.ajax(url, {
+						method: 'post',
+						data: {
+							csrfmiddlewaretoken: csrftoken,
+						}
+					}).done( (e) =>  {
+						if (e.ok) {
+							for(const bellowIndex in this.chatsBellow) {
+								var found = this.chatsBellow[bellowIndex].findIndex((el) => el.id === this.messageToOption.id);
+								if (found > -1)
+									console.log(this.chatsBellow[bellowIndex].splice(found,1));
+							}
+						    {#var messageElement = document.querySelector('[message_id="'+this.messageToOption.id+'"]');#}
+						    {#if (messageElement)#}
+						    {#    messageElement.remove();#}
+							$('#modaldemo2').modal('hide');
+							this.messageToOption = null;
+						} else {
+							alert('مشکلی رخ داد');
+						}
+					});
+                },
+				editMessageView: function() {
+                    this.$refs.textMessage.value = this.messageToOption.text;
+                    $('#modaldemo2').modal('hide');
+				},
             }
         })
 
