@@ -1,4 +1,5 @@
-<div class="the-cool-loader d-none bg-gray-200 ht-300 pos-relative align-items-center">
+<div class="the-cool-loader bg-gray-200 ht-300 pos-relative align-items-center"
+	v-bind:class="{ 'd-none': !loadingNewChatCandidateUsers, 'd-flex': loadingNewChatCandidateUsers}" >
     <div class="sk-folding-cube">
         <div class="sk-cube1 sk-cube"></div>
         <div class="sk-cube2 sk-cube"></div>
