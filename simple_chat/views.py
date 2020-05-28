@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.utils.datetime_safe import datetime
 from django.views import View
 from django.views.generic import TemplateView, CreateView, UpdateView
 
@@ -322,6 +323,7 @@ class CreateMessage(LoginRequiredMixin, View):
                     message = Message.objects.get(pk=int(forward_message))
                     chat = Chat.objects.get(pk=int(chat_id))
                     message.pk = None
+                    message.forwarded_at = datetime.now()
                     message.chat = chat
                     message.from_user = request.user
                     message.save()

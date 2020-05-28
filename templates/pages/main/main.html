@@ -134,7 +134,7 @@
 					</div>
 					<div class="modal-body context-menu modal-context-menu p-0 tx-right">
 						<a class="btn" v-if="messageToOption && messageToOption.from_user.id == me.id" style="width: 100%;" @click.prevent="deleteMessage">حذف پیام</a>
-						<a class="btn" style="width: 100%;">ارسال به فرد دیگری</a>
+						<a class="btn" @click.prevent="forwardingMessage" style="width: 100%;">ارسال به فرد دیگری</a>
 						<a class="btn" v-if="messageToOption && messageToOption.from_user.id == me.id" style="width: 100%;" @click.prevent="editMessageView">ویرایش پیام</a>
 					</div>
 					<div class="modal-footer">
@@ -159,9 +159,7 @@
 				<div class="col-lg-5 col-xl-4">
 					<div class="card widget-5 chat-part">
 						<div class="card-header">
-                        <span>پیام ها
-                        <a href="" v-on:click.prevent="getUserChats" class="btn btn-dark btn-icon rounded-circle text-white" id="update_all_chats"><div><i
-								class="fa fa-redo"></i></div></a></span>
+                        <span>پیام ها</span>
 						<a href=""
 						   data-toggle="modal"
 						   v-on:click="getPossibleChatCandidates"
@@ -174,7 +172,7 @@
 							<a v-if="chatUsers.length > 0"
 							   v-for="chat in chatUsers" v-bind:key="chat.id"
 							   v-on:click.prevent="getChatMessages(false,chat);"
-							   href="" class="list-group-item list-group-item-action media">
+							   class="list-group-item list-group-item-action media">
 								<img v-bind:src="chat.user.avatar ? chat.user.avatar : defaultImagePath" alt="">
 								{% verbatim %}
 								<div class="media-body">
@@ -206,12 +204,11 @@
 									{#                            <span class="tx-12" id="to_chat_status">فعال است</span>#}
 								</div><!-- media-body -->
 							</div><!-- media -->
-							<span class="tx-12">
-                            <a href="#" class="btn btn-dark btn-icon rounded-circle" id="update_chat"><div><i
-									class="fa fa-redo"></i></div></a></span>
+							<span class="tx-12"></span>
 							</span>
 						</div><!-- card-header -->
 						<div class="card-body pd-25" style="position: relative">
+							<div v-if="forwarding" style="position:absolute;background-color: rgba(0,0,0,.5);width: 100%;height: 100%;top: 0;left: 0;z-index: 9999;"></div>
 							<div class="media-list messages-container" >
 								<div class="col-12 text-center">
 									<button v-if="chatsBellow.length != 0 && chattingWith && currentChat" v-on:click="getChatMessages(true)" class="btn btn-primary btn-sm" id="get-older">گرفتن پیام های قدیمی تر
@@ -226,7 +223,8 @@
 									<div class="media-body tx-12">
 										{% verbatim %}
 										<div class="the-message-container mt-2"  v-for="message in chatPart" @dblclick="messageOptions(message)" v-bind:message_id="message.id">
-											<div class="chat-holder"
+											<i v-if="message.forwarded_at" class="fa fa-recycle" style="font-size: 10px"></i>
+											<div class="chat-holder" style="min-width: 150px;"
 												 v-bind:class="[message && message.from_user.id != me.id ? 'chat-1':'chat-2', message && !message.seen ? 'not-read' :'']">
 												<p class="mb-0">{{ message.text }}</p>
 												<div v-html="filePreview(message)"></div>
@@ -300,6 +298,7 @@
                 lastChatBellow: null,
                 intervalId: null,
 				messageToOption: null,
+				forwarding: false,
             },
 			mounted: function() {
                 this.getMe(() => {
@@ -408,9 +407,10 @@
                     console.log(event);
                     if (this.messageToOption) {
                         this.messageToOption = null;
+                        this.forwarding = false;
                         this.$refs.textMessage.value = '';
                     } else {
-                        if (event && event instanceof KeyboardEvent)
+                        if (event)
                             this.currentChat = null;
 						this.chattingWith=null;
 						this.chatsAbove = [];
@@ -422,16 +422,40 @@
                     }
 				},
 				getChatMessages: function(prepend, chat, append) {
-                    // initializes
                     if (!ps){
+						// initializes pscroll if is not yet
                         var ps_container = document.querySelector('.messages-container').parentElement;
 						ps_container.style.height = window.screen.availHeight - 330 + 'px';
 						ps = new PerfectScrollbar(ps_container);
                     }
+
                     if(chat)
                         this.currentChat = chat;
-                    if (!prepend && !append)
+
+                    if(this.forwarding && (!prepend && !append)) {
+						$.ajax('{% url 'message-create-endpoint' %}', {
+							method: 'post',
+							data: {
+								csrfmiddlewaretoken: csrftoken,
+								forward_message: this.messageToOption.id,
+								chat_id: this.currentChat.id,
+							}
+						}).done(() => {
+							this.forwarding = false;
+							this.messageToOption = null;
+						}).fail(() => {
+							this.forwarding = false;
+							this.messageToOption = null;
+						});
+						return null;
+                    }
+
+                    if (!prepend && !append){
+						// if forwarding or doing sth with some message just cancel it
+						this.forwarding = false;
+						this.messageToOption = null;
                     	this.clearChat();
+                    }
                     this.currentChat = this._setChatUser(this.currentChat);
                     this.chattingWith = this.currentChat.user;
                     var chat_id = this.currentChat.id;
@@ -606,8 +630,16 @@
                     this.$refs.textMessage.value = this.messageToOption.text;
                     $('#modaldemo2').modal('hide');
 				},
+				forwardingMessage: function() {
+                    this.forwarding = true;
+                    $('#modaldemo2').modal('hide');
+				},
             }
-        })
+        });
+        $(document).keyup((e) => {
+            if(e.key == "Escape")
+                app.clearChat(e);
+        });
 
 	</script>
 {% endblock %}
