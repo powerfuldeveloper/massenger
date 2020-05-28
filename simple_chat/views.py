@@ -211,6 +211,14 @@ class ShowChats(LoginRequiredMixin, PaginationMixIn, View):
     def prepare_qs(self):
         self.qs = self.qs.filter(Q(from_user=self.cu) | Q(to_user=self.cu))
 
+    def prepare_data(self):
+        response_data = []
+        for data in self.apply_page():
+            j = self.to_dict(data)
+            j['new_messages'] = data.message_set.filter(seen_at=None).count()
+            response_data.append(j)
+        return response_data
+
 
 class ChatDetails(LoginRequiredMixin, PaginationMixIn, View):
     model = Message

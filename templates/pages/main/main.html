@@ -73,6 +73,14 @@
 		.chat-holder.not-read .check-container i:last-child {
 			color: white;
 		}
+		.ps-container > .ps-scrollbar-x-rail > .ps-scrollbar-x {
+		  transition: .2s linear left;
+		  /* maybe other vendor-prefixed transitions */
+		}
+		.ps-container > .ps-scrollbar-y-rail > .ps-scrollbar-y {
+		  transition: .2s linear top;
+		  /* maybe other vendor-prefixed transitions */
+		}
 </style>
 	<div  id="app" @keyup.esc="clearChat">
 		<!-- Choose Chat Modal -->
@@ -490,8 +498,10 @@
 					}).done((e) => {
 					    // make sure the message is not created at all
 						var currentFirstMessage = null;
+						var currentSrollHeight = 0;
 						if(prepend && this.chatsBellow[0] && this.chatsBellow[0][0]) {
-						    currentFirstMessage = this.chatsBellow[0][0];
+								currentFirstMessage = this.chatsBellow[0][0];
+								currentSrollHeight = ps.element.scrollHeight;
 						}
 					    for(const chatIndex in e.data.messages) {
 							let found = false;
@@ -537,8 +547,10 @@
                         if(currentFirstMessage) {
                             if (this.chatsBellow[0][0].id !== currentFirstMessage.id)
                             	setTimeout(() => {
-                            	    document.querySelector('[message_id="'+currentFirstMessage.id+'"]').scrollIntoView();
-									this.autoOlder = false;
+                            	    ps.element.scrollBy(0, ps.element.scrollHeight - currentSrollHeight);
+									setTimeout(() => {
+									    this.autoOlder = false;
+									}, 500);
 								},200)
 						}
 					    ps.update();
