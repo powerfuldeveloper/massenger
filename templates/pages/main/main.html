@@ -188,7 +188,7 @@
 								{% verbatim %}
 								<div class="media-body">
 									<span v-if="chat.new_messages > 0" class="badge badge-danger"
-										  style="position: absolute;top:0;left:20px">
+										  style="position: absolute;bottom: 12px;left:20px;font-size: 13px;">
 										{{chat.new_messages}}</span>
 									<div class="msg-top">
 										<span class="name-holder">{{chat.user.first_name}} {{chat.user.last_name}}</span>
@@ -285,7 +285,7 @@
 									</a>
 									<a  v-if="files > 0" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].value='';files=0"
 											class="btn btn-warning text-white btn-sm mt-2 float-left">حذف فایل های انتخاب شده
-										<span class="badge badge-danger">{{files}}</span>
+										<span class="badge badge-danger" style="font-size: 10px;">{{files}}</span>
 									</a>
 
 									{% endverbatim %}
