@@ -184,11 +184,14 @@
 								<img v-bind:src="chat.user.avatar ? chat.user.avatar : defaultImagePath" alt="">
 								{% verbatim %}
 								<div class="media-body">
+									<span v-if="chat.new_messages > 0" class="badge badge-secondary"
+										  style="position: absolute;top:0;left:20px">
+										{{chat.new_messages}}</span>
 									<div class="msg-top">
 										<span class="name-holder">{{chat.user.first_name}} {{chat.user.last_name}}</span>
 										<span class="time-holder">{{chat.user.username}}</span>
 									</div>
-									<p class="msg-summary"></p>
+									<p class="msg-summary">{{chat.last_message_text}}</p>
 								</div>
 								{% endverbatim %}
 							</a>

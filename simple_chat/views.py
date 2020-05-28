@@ -215,7 +215,10 @@ class ShowChats(LoginRequiredMixin, PaginationMixIn, View):
         response_data = []
         for data in self.apply_page():
             j = self.to_dict(data)
-            j['new_messages'] = data.message_set.filter(seen_at=None).count()
+            j['new_messages'] = data.message_set.filter(seen_at=None).exclude(from_user=self.request.user).count()
+            last_mesage = data.message_set.last()
+            if last_mesage:
+                j['last_message_text'] = last_mesage.text
             response_data.append(j)
         return response_data
 
