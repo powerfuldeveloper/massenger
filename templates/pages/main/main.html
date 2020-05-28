@@ -279,11 +279,15 @@
 										{{ messageToOption ? 'ویرایش پیام':'ارسال پیام' }}
 									</button>
 									<input type="file" style="display: none;" ref="file-to-send" multiple  @change="files=$refs['file-to-send'].files.length"/>
-									<button type="button" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].click();"
-											class="btn btn-primary btn-sm mt-2 float-left">انتخاب فایل
-									</button>
+									<a style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].click();"
+											class="btn btn-primary text-white btn-sm mt-2 float-left">انتخاب فایل
 
-									<span v-if="files > 0" class="badge badge-primary float-left ml-2 mt-3" @click="$refs['file-to-send'].value='';files=0">{{files}}</span>
+									</a>
+									<a  v-if="files > 0" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].value='';files=0"
+											class="btn btn-warning text-white btn-sm mt-2 float-left">حذف فایل های انتخاب شده
+										<span class="badge badge-danger">{{files}}</span>
+									</a>
+
 									{% endverbatim %}
 								</div><!-- media-body -->
 							</div><!-- media -->
