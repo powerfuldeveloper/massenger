@@ -218,7 +218,7 @@ class ShowChats(LoginRequiredMixin, PaginationMixIn, View):
             j['new_messages'] = data.message_set.filter(seen_at=None).exclude(from_user=self.request.user).count()
             last_mesage = data.message_set.last()
             if last_mesage:
-                j['last_message_text'] = last_mesage.text
+                j['last_message_text'] = last_mesage.text[:50] + '' if len(last_mesage.text) < 50 else ' ...'
             response_data.append(j)
         return response_data
 
@@ -353,15 +353,27 @@ class CreateMessage(LoginRequiredMixin, View):
                         'BAD_PARAMETERS'
                     ]
                 })
-        message_form = MessageCreationForm(self.request.POST, self.request.FILES)
-        if not message_form.is_valid():
-            return JsonResponse({
-                'ok': False,
-                'messages': [
-                    'BAD_PARAMETERS'
-                ]
-            })
-        message_form.save()
+        if len(self.request.FILES) > 0:
+            for key in self.request.FILES:
+                message_form = MessageCreationForm(self.request.POST, {'file': self.request.FILES[key]})
+                if not message_form.is_valid():
+                    return JsonResponse({
+                        'ok': False,
+                        'messages': [
+                            'BAD_PARAMETERS'
+                        ]
+                    })
+                message_form.save()
+        else:
+            message_form = MessageCreationForm(self.request.POST)
+            if not message_form.is_valid():
+                return JsonResponse({
+                    'ok': False,
+                    'messages': [
+                        'BAD_PARAMETERS'
+                    ]
+                })
+            message_form.save()
         return JsonResponse({'ok': True})
 
 

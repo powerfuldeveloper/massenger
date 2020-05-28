@@ -275,11 +275,13 @@
 											class="btn btn-primary btn-sm mt-2 float-left">
 										{{ messageToOption ? 'ویرایش پیام':'ارسال پیام' }}
 									</button>
-									{% endverbatim %}
-									<input type="file" style="display: none;" ref="file-to-send"/>
-									<button type="button" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].click()"
+									<input type="file" style="display: none;" ref="file-to-send" multiple  @change="files=$refs['file-to-send'].files.length"/>
+									<button type="button" style="margin-left: 10px;" @click.prevent="$refs['file-to-send'].click();"
 											class="btn btn-primary btn-sm mt-2 float-left">انتخاب فایل
 									</button>
+
+									<span v-if="files > 0" class="badge badge-secondary float-left ml-2 mt-3" @click="$refs['file-to-send'].value='';files=0">{{files}}</span>
+									{% endverbatim %}
 								</div><!-- media-body -->
 							</div><!-- media -->
 						</div><!-- card-footer -->
@@ -314,6 +316,8 @@
 				messageToOption: null,
 				forwarding: false,
 				autoOlder: false,
+				wroteNewMessage: false,
+				files: 0,
             },
 			mounted: function() {
                 this.getMe(() => {
@@ -340,6 +344,9 @@
 				}, 1000);
 			},
             methods: {
+                filesChange: function(event) {
+                    this.files = event.target.files.length;
+                },
                 getMe: function(done) {
                     $.ajax("{% url 'user-me' %}",{
 						method: 'post',
@@ -556,10 +563,13 @@
 									}, 500);
 								},200)
 						}
-                        if(last_message_id) {
-                            ps.element.scrollTop = 99999 * 4;
-						}
 					    ps.update();
+                        if(this.wroteNewMessage) {
+                            setTimeout(() => {
+                                ps.element.scrollTop = 99999 * 4;
+								this.wroteNewMessage = false;
+							},150)
+						}
                     });
                 },
                 printDate: function(d) {
@@ -584,8 +594,11 @@
                         form_data.append('message_id', this.messageToOption.id);
 						form_data.append('text', message);
                     } else {
+                        var filesToSend =this.$refs['file-to-send'].files;
 						if (this.$refs['file-to-send'].files.length)
-							form_data.append('file', this.$refs['file-to-send'].files[0]);
+						    for(var fileIndex in filesToSend) {
+						        form_data.append('file['+fileIndex+']', filesToSend[fileIndex]);
+                            }
 						form_data.append('from_user', String(this.me.id));
 						form_data.append('to_user', String(this.chattingWith.id));
 						form_data.append('chat', String(this.currentChat.id));
@@ -605,6 +618,7 @@
 						processData: false,
 					}).done((e) => {
 					    if (e.ok) {
+							this.wroteNewMessage = true;
 					        if(this.messageToOption) {
 								for(const bellowIndex in this.chatsBellow) {
 									var found = this.chatsBellow[bellowIndex].findIndex((el) => el.id === this.messageToOption.id);
@@ -613,7 +627,7 @@
 								}
 								this.messageToOption = null;
 							} else {
-						    this.getChatMessages(false, null, true);
+								this.getChatMessages(false, null, true);
 							}
 							textInput.value= '';
 						} else {
@@ -624,14 +638,16 @@
                 filePreview: function (message) {
                     if (message.file) {
 						var file_address = message.file;
+						var html = '';
 						if (file_address.match('(.png|.jpg|.jpeg|.tiff)$')) {
-							return '<br><br><img style="max-width: 450px" src="' + message.file + '"/>';
+							html = '<br><br><img style="max-width: 450px" src="' + message.file + '"/>';
 						} else if (file_address.match('(.mkv|.mp4)$')) {
-							return '<br><br><video style="max-width: 450px" controls><source src="' + message.file + '" type="video/mp4"></video>';
+							html = '<br><br><video style="max-width: 450px" controls><source src="' + message.file + '" type="video/mp4"></video>';
 						} else if (file_address.match('(.mp3)$')) {
-							return '<br><br><audio controls><source src="' + message.file + '" type="video/mp4"></audio>';
+							html = '<br><br><audio controls><source src="' + message.file + '" type="video/mp4"></audio>';
 						}
-						return '<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>';
+						html += '<br><br><a download class="btn btn-primary btn-sm" href="' + message.file + '"> دانلود فایل </a>';
+						return html;
 					}
 				},
 				messageOptions: function(message) {
