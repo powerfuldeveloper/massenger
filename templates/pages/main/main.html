@@ -214,19 +214,20 @@
 						<div class="card-body pd-25" style="position: relative">
 							<div class="media-list messages-container" >
 								<div class="col-12 text-center">
-									<button v-if="chattingWith && currentChat" v-on:click="getChatMessages(true)" class="btn btn-primary btn-sm" id="get-older">گرفتن پیام های قدیمی تر
+									<button v-if="chatsBellow.length != 0 && chattingWith && currentChat" v-on:click="getChatMessages(true)" class="btn btn-primary btn-sm" id="get-older">گرفتن پیام های قدیمی تر
 									</button>
+									<p v-if="chatsBellow.length == 0 && chattingWith && currentChat" class="mt-5">هنوز پیامی ارسال نشده است</p>
 								</div>
 								<div class="the-messages media mg-t-20"
-									 v-bind:class="{'is-not-sender': chatPart[0].from_user.id != me.id}"
+									 v-bind:class="{'is-not-sender': chatPart[0] && chatPart[0].from_user.id != me.id}"
 									 v-for="chatPart in chatsBellow">
-									<img  v-bind:src="chatPart[0].from_user.avatar ? chatPart[0].from_user.avatar : 'https://via.placeholder.com/500'"
+									<img  v-bind:src="chatPart[0] && chatPart[0].from_user.avatar ? chatPart[0].from_user.avatar : 'https://via.placeholder.com/500'"
 										  class="user-image-holder wd-36 rounded-circle mg-l-20" alt="">
 									<div class="media-body tx-12">
 										{% verbatim %}
 										<div class="the-message-container mt-2"  v-for="message in chatPart" @dblclick="messageOptions(message)" v-bind:message_id="message.id">
 											<div class="chat-holder"
-												 v-bind:class="[message.from_user.id != me.id ? 'chat-1':'chat-2', !message.seen ? 'not-read' :'']">
+												 v-bind:class="[message && message.from_user.id != me.id ? 'chat-1':'chat-2', message && !message.seen ? 'not-read' :'']">
 												<p class="mb-0">{{ message.text }}</p>
 												<div v-html="filePreview(message)"></div>
 												<div class="chat-time-container">
@@ -455,6 +456,8 @@
 					    for(const chatIndex in e.data.messages) {
 							let found = false;
 					        let message = e.data.messages[chatIndex];
+					        if (!message)
+					            continue;
 					        // check if message exists in chatsAbove
 					        for(const aboveIndex in this.chatsAbove) {
 					            found = this.chatsAbove[aboveIndex].findIndex((el) => el.id === message.id) > -1;
@@ -582,14 +585,16 @@
 						}
 					}).done( (e) =>  {
 						if (e.ok) {
+						    var messageElement = document.querySelector('[message_id="'+this.messageToOption.id+'"]');
+						    if (messageElement)
+						        messageElement.remove();
 							for(const bellowIndex in this.chatsBellow) {
 								var found = this.chatsBellow[bellowIndex].findIndex((el) => el.id === this.messageToOption.id);
 								if (found > -1)
-									console.log(this.chatsBellow[bellowIndex].splice(found,1));
+									this.chatsBellow[bellowIndex].splice(found,1)
 							}
-						    {#var messageElement = document.querySelector('[message_id="'+this.messageToOption.id+'"]');#}
-						    {#if (messageElement)#}
-						    {#    messageElement.remove();#}
+							if(this.chatsBellow.length == 1 && this.chatsBellow[0].length == 0)
+							    this.chatsBellow = [];
 							$('#modaldemo2').modal('hide');
 							this.messageToOption = null;
 						} else {
