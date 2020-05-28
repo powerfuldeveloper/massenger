@@ -20,7 +20,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path, include
 
 from simple_chat.views import Login, Main, UserCreate, UserUpdate, ShowUsers, ShowMessage, ShowChats, StartChat, \
-    ChatDetails, CreateMessage, DeleteMessage, GetMessage, UpdateMessage, UserDelete
+    ChatDetails, CreateMessage, DeleteMessage, GetMessage, UpdateMessage, UserDelete, MeView, GetSeenMessages
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,6 +28,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('users/', include([
         path('', UserCreate.as_view(), name='user-page'),
+        path('me/', MeView.as_view(), name='user-me'),
         path('show/', ShowUsers.as_view(), name='user-show-endpoint'),
         path('update/<int:pk>', UserUpdate.as_view(), name='user-update-page'),
         path('delete/<int:pk>', UserDelete.as_view(), name='user-delete'),
@@ -43,6 +44,7 @@ urlpatterns = [
         path('update/', UpdateMessage.as_view(), name='message-update-endpoint'),
         path('get/', GetMessage.as_view(), name='message-get-endpoint'),
         path('show/', ShowMessage.as_view(), name='message-show-endpoint'),
+        path('seen/', GetSeenMessages.as_view(), name='message-seen-endpoint'),
         path('delete/<int:pk>', DeleteMessage.as_view(), name='message-delete-endpoint'),
     ])),
     path('', Main.as_view(), name='main-page'),

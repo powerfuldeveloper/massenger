@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.utils.datetime_safe import datetime
 from django.views import View
 from django.views.generic import TemplateView, CreateView, UpdateView
 
@@ -154,9 +155,12 @@ class PaginationMixIn(BasicAttrsMixIn):
 
     def prepare_data(self):
         response_data = []
-        for data in self.pg.page(self.page).object_list:
+        for data in self.apply_page():
             response_data.append(self.to_dict(data))
         return response_data
+
+    def apply_page(self):
+        return self.pg.page(self.page).object_list
 
     def prepare_response(self):
         return JsonResponse({
@@ -269,6 +273,35 @@ class ShowMessage(LoginRequiredMixin, PaginationMixIn, View):
         d = self.qs.exclude(from_user=self.request.user)
 
 
+class GetSeenMessages(LoginRequiredMixin, PaginationMixIn, View):
+    model = Message
+    chat = None
+
+    def validate_data(self):
+        try:
+            self.chat = Chat.objects.get(pk=int(self.request.POST.get('ci')))
+        except Exception as e:
+            return JsonResponse({
+                'ok': False,
+                'messages': [
+                    'OBJECT_DOES_NOT_EXIST' if isinstance(e, Message.DoesNotExist) else f'BAD_PARAMETERS {{ {e} }}'
+                ],
+            })
+
+    def prepare_data(self):
+        response_data = []
+        for data in self.apply_page():
+            response_data.append({
+                'id': data.id,
+                'seen': data.seen_at,
+            })
+        return response_data
+
+    def prepare_qs(self):
+        if self.chat:
+            self.qs = self.qs.filter(chat=self.chat).order_by('-id')[:50]
+
+
 class GetMessage(LoginRequiredMixin, PaginationMixIn, View):
     model = Message
 
@@ -290,6 +323,7 @@ class CreateMessage(LoginRequiredMixin, View):
                     message = Message.objects.get(pk=int(forward_message))
                     chat = Chat.objects.get(pk=int(chat_id))
                     message.pk = None
+                    message.forwarded_at = datetime.now()
                     message.chat = chat
                     message.from_user = request.user
                     message.save()
@@ -353,3 +387,8 @@ class DeleteMessage(LoginRequiredMixin, View):
         except:
             pass
         return JsonResponse({'ok': False})
+
+
+class MeView(LoginRequiredMixin, View):
+    def post(self, request):
+        return JsonResponse(request.user.to_dict())

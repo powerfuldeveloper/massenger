@@ -42,6 +42,7 @@ class Message(models.Model):
     file = models.FileField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    forwarded_at = models.DateTimeField(null=True,blank=True)
 
     def to_dict(self):
         updated = self.created_at != self.updated_at
@@ -49,10 +50,19 @@ class Message(models.Model):
             .getJalaliList()
         created_at = list(created_at)
         created_at.extend([self.created_at.hour,  self.created_at.minute, self.created_at.second, ])
+
         updated_at = GregorianToJalali(self.updated_at.year, self.updated_at.month, self.updated_at.day) \
             .getJalaliList()
         updated_at = list(updated_at)
-        updated_at.extend([self.updated_at.hour,  self.updated_at.minute, self.updated_at.second,])
+        updated_at.extend([self.updated_at.hour, self.updated_at.minute, self.updated_at.second, ])
+
+        if self.forwarded_at:
+            forwarded_at = GregorianToJalali(self.forwarded_at.year, self.forwarded_at.month, self.forwarded_at.day) \
+                .getJalaliList()
+            forwarded_at = list(forwarded_at)
+            forwarded_at.extend([self.forwarded_at.hour, self.forwarded_at.minute, self.forwarded_at.second, ])
+        else:
+            forwarded_at = None
         return {
             'id': self.id,
             'chat': self.chat.to_dict(),
@@ -63,6 +73,7 @@ class Message(models.Model):
             'seen': self.seen_at is not None,
             'created_at': created_at,
             'updated_at': updated_at,
+            'forwarded_at': forwarded_at,
         }
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
