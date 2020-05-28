@@ -81,6 +81,9 @@
 		  transition: .2s linear top;
 		  /* maybe other vendor-prefixed transitions */
 		}
+	.badge {
+		font-family: "Fira Sans", "Helvetica Neue", Arial, sans-serif
+	}
 </style>
 	<div  id="app" @keyup.esc="clearChat">
 		<!-- Choose Chat Modal -->
@@ -184,7 +187,7 @@
 								<img v-bind:src="chat.user.avatar ? chat.user.avatar : defaultImagePath" alt="">
 								{% verbatim %}
 								<div class="media-body">
-									<span v-if="chat.new_messages > 0" class="badge badge-secondary"
+									<span v-if="chat.new_messages > 0" class="badge badge-danger"
 										  style="position: absolute;top:0;left:20px">
 										{{chat.new_messages}}</span>
 									<div class="msg-top">
@@ -280,7 +283,7 @@
 											class="btn btn-primary btn-sm mt-2 float-left">انتخاب فایل
 									</button>
 
-									<span v-if="files > 0" class="badge badge-secondary float-left ml-2 mt-3" @click="$refs['file-to-send'].value='';files=0">{{files}}</span>
+									<span v-if="files > 0" class="badge badge-primary float-left ml-2 mt-3" @click="$refs['file-to-send'].value='';files=0">{{files}}</span>
 									{% endverbatim %}
 								</div><!-- media-body -->
 							</div><!-- media -->
