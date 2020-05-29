@@ -593,7 +593,7 @@
                     var form_data = new FormData();
                     form_data.append('csrfmiddlewaretoken', csrftoken);
                     var message = textInput.value;
-                    if(message.trim().length == 0){
+                    if(message.trim().length == 0 && this.$refs['file-to-send'].files.length == 0){
                         alert('پیام نمیتواند خالی باشد');
 						return;
                     }
@@ -637,6 +637,8 @@
 								this.getChatMessages(false, null, true);
 							}
 							textInput.value= '';
+							this.$refs['file-to-send'].value = '';
+							this.files = 0;
 						} else {
 							alert('اطلاعات ارسال شده اشتباه است')
 						}

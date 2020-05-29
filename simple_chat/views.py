@@ -366,7 +366,7 @@ class CreateMessage(LoginRequiredMixin, View):
                 message_form.save()
         else:
             message_form = MessageCreationForm(self.request.POST)
-            if not message_form.is_valid():
+            if not message_form.is_valid() or message_form.instance.text is None or message_form.instance.text == '':
                 return JsonResponse({
                     'ok': False,
                     'messages': [
