@@ -577,6 +577,11 @@
 								this.wroteNewMessage = false;
 							},150)
 						}
+                        if(e.data.messages && e.data.messages.length > 0 && append)
+                            setTimeout(() => {
+                                ps.element.scrollTop = 99999 * 4;
+							},150);
+
                     });
                 },
                 printDate: function(d) {
